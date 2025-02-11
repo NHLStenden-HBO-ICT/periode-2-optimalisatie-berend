@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.4)
-project ("Tmpl8_2018-01")
+project("Tmpl8_2018-01")
 
-# FindFreeImage.cmake and FindSDL2.cmake are not part of cmake by default, use modified third-party scripts:
+# FindFreeImage.cmake and FindSDL2.cmake are not part of cmake by default,
+# use modified third-party scripts:
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(OpenGL_GL_PREFERENCE GLVND)
