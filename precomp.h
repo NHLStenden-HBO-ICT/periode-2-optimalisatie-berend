@@ -44,19 +44,19 @@
 #include <chrono>
 #include <fstream>
 #include <iostream>
-#include <sstream>
 #include <limits>
 #include <memory>
 #include <random>
+#include <sstream>
 #include <string>
 #include <vector>
 
 #include <deque>
-#include <queue>
+#include <filesystem>
 #include <future>
 #include <mutex>
+#include <queue>
 #include <thread>
-#include <filesystem>
 
 // Namespaced C headers:
 #include <cassert>
@@ -68,7 +68,7 @@
 // Header for AVX, and every technology before it.
 // If your CPU does not support this, include the appropriate header instead.
 // See: https://stackoverflow.com/a/11228864/2844473
-#include <immintrin.h>
+/*#include <immintrin.h>*/
 
 // clang-format off
 

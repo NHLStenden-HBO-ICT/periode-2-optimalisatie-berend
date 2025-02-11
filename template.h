@@ -17,7 +17,7 @@ typedef unsigned int uint;
 #define FREE64(x) _aligned_free(x)
 #else
 #define ALIGN(x) __attribute__((aligned(x)))
-#define MALLOC64(x) aligned_alloc(64, x)
+#define MALLOC64(x) malloc(x)
 #define FREE64(x) free(x)
 #define __inline __attribute__((__always_inline__))
 #endif
@@ -475,112 +475,6 @@ class mat4
             for (int i = 0; i < 16; i++) cell[i] = inv[i] * invdet;
         }
     }
-};
-
-class aabb
-{
-  public:
-
-    aabb() = default;
-    aabb(__m128 a, __m128 b)
-    {
-        bmin4 = a, bmax4 = b;
-        bmin[3] = bmax[3] = 0;
-    }
-    aabb(vec3 a, vec3 b) { bmin[0] = a.x, bmin[1] = a.y, bmin[2] = a.z, bmin[3] = 0, bmax[0] = b.x, bmax[1] = b.y, bmax[2] = b.z, bmax[3] = 0; }
-    __inline void reset() { bmin4 = _mm_set_ps1(1e34f), bmax4 = _mm_set_ps1(-1e34f); }
-    bool contains(const __m128& p) const
-    {
-        union {
-            __m128 va4;
-            float va[4];
-        };
-        union {
-            __m128 vb4;
-            float vb[4];
-        };
-        va4 = _mm_sub_ps(p, bmin4), vb4 = _mm_sub_ps(bmax4, p);
-        return ((va[0] >= 0) && (va[1] >= 0) && (va[2] >= 0) &&
-                (vb[0] >= 0) && (vb[1] >= 0) && (vb[2] >= 0));
-    }
-    __inline void grow(const aabb& bb)
-    {
-        bmin4 = _mm_min_ps(bmin4, bb.bmin4);
-        bmax4 = _mm_max_ps(bmax4, bb.bmax4);
-    }
-    __inline void grow(const __m128& p)
-    {
-        bmin4 = _mm_min_ps(bmin4, p);
-        bmax4 = _mm_max_ps(bmax4, p);
-    }
-    __inline void grow(const __m128 min4, const __m128 max4)
-    {
-        bmin4 = _mm_min_ps(bmin4, min4);
-        bmax4 = _mm_max_ps(bmax4, max4);
-    }
-    __inline void grow(const vec3& p)
-    {
-        __m128 p4 = _mm_setr_ps(p.x, p.y, p.z, 0);
-        grow(p4);
-    }
-    aabb aabb_union(const aabb& bb) const
-    {
-        aabb r;
-        r.bmin4 = _mm_min_ps(bmin4, bb.bmin4), r.bmax4 = _mm_max_ps(bmax4, bb.bmax4);
-        return r;
-    }
-    static aabb aabb_union(const aabb& a, const aabb& b)
-    {
-        aabb r;
-        r.bmin4 = _mm_min_ps(a.bmin4, b.bmin4), r.bmax4 = _mm_max_ps(a.bmax4, b.bmax4);
-        return r;
-    }
-    aabb intersection(const aabb& bb) const
-    {
-        aabb r;
-        r.bmin4 = _mm_max_ps(bmin4, bb.bmin4), r.bmax4 = _mm_min_ps(bmax4, bb.bmax4);
-        return r;
-    }
-    __inline float extend(const int axis) const { return bmax[axis] - bmin[axis]; }
-    __inline float minimum(const int axis) const { return bmin[axis]; }
-    __inline float maximum(const int axis) const { return bmax[axis]; }
-    float area() const
-    {
-        union {
-            __m128 e4;
-            float e[4];
-        };
-        e4 = _mm_sub_ps(bmax4, bmin4);
-        return max(0.0f, e[0] * e[1] + e[0] * e[2] + e[1] * e[2]);
-    }
-    int longest_axis() const
-    {
-        int a = 0;
-        if (extend(1) > extend(0)) a = 1;
-        if (extend(2) > extend(a)) a = 2;
-        return a;
-    }
-
-    // data members
-    union {
-        __m128 bmin4 = _mm_set_ps(1e34f, 1e34f, 1e34f, 0);
-        float bmin[4];
-        vec3 bmin3;
-    };
-    union {
-        __m128 bmax4 = _mm_set_ps(-1e34f, -1e34f, -1e34f, 0);
-        float bmax[4];
-        vec3 bmax3;
-    };
-
-
-    __inline void set_bounds(const __m128 min4, const __m128 max4)
-    {
-        bmin4 = min4;
-        bmax4 = max4;
-    }
-    __inline __m128 center() const { return _mm_mul_ps(_mm_add_ps(bmin4, bmax4), _mm_set_ps1(0.5f)); }
-    __inline float center(uint axis) const { return (bmin[axis] + bmax[axis]) * 0.5f; }
 };
 
 mat4 operator*(const mat4& a, const mat4& b);
