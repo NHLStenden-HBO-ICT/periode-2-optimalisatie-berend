@@ -189,7 +189,7 @@ void Game::update(float deltaTime)
         smoke.tick();
     }
 
-    //Calculate "forcefield" around active tanks
+    //Calculate "force field" around active tanks
     forcefield_hull.clear();
 
     //Find first active tank (this loop is a bit disgusting, fix?)
