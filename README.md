@@ -11,6 +11,7 @@
   - [Threading](#threading)
   - [Resultaat](#resultaat)
   - [Bronnen](#bronnen)
+  - [Build and run van het project](#build-and-run-van-het-project)
 <!--toc:end-->
 
 ## Inleiding
@@ -86,3 +87,10 @@ Resultaat van dit alles is:
 - [Learn Quick Sort in 13 minutes ⚡]("https://www.youtube.com/watch?v=Vtckgz38QHs")
 - [Building Collision Simulation ...]("https://www.youtube.com/watch?v=eED4bSkYCB8&t=942s")
 - [Learn Merge Sort in 13 minutes 🔪]("https://www.youtube.com/watch?v=3j0SWDX4AtU")
+
+## Build and run van het project
+
+Nvim  -> CMakeBuild
+      -> CMakeBuildType
+        -> Debug of Release
+
