@@ -411,34 +411,48 @@ void Game::draw() {
   }
 }
 
-// TODO: change this.
+// TODO: change this. (changed to quicksort)
 // -----------------------------------------------------------
-// Sort tanks by health value using insertion sort
+// Sort tanks by health value using quicksort (tekst met chatgpt verduidelijkt)
+// Bron voor uitleg: https://www.youtube.com/watch?v=Vtckgz38QHs
+// -----------------------------------------------------------
+// Time Complexity:
+// - Original (insertion sort): O(n²) → very slow with many tanks
+// - New (quicksort): O(n log n) → much faster with many tanks
+//
+// How Quicksort Works:
+// 1. Pick a pivot (middle tank)
+// 2. Put tanks with more health than pivot on left
+// 3. Put tanks with less health than pivot on right
+// 4. Repeat for left and right parts
+//
+// Example with health values:
+// Start:  [50, 90, 30, 70, 60]
+// Pivot = 60
+// Step 1: [90, 70, 60, 30, 50] (60 is in correct spot)
+// Step 2: [90, 70] 60 [30, 50] (sort each side)
+// Final:  [90, 70, 60, 50, 30] (sorted by health)
 // -----------------------------------------------------------
 void Tmpl8::Game::insertion_sort_tanks_health(
     const std::vector<Tank> &original, std::vector<const Tank *> &sorted_tanks,
     int begin, int end) {
-  const int NUM_TANKS = end - begin;
-  sorted_tanks.reserve(NUM_TANKS);
-  sorted_tanks.emplace_back(&original.at(begin));
+    const int NUM_TANKS = end - begin;
+    sorted_tanks.clear();  // Clear existing tanks
+    sorted_tanks.reserve(NUM_TANKS);
 
-  for (int i = begin + 1; i < (begin + NUM_TANKS); i++) {
-    const Tank &current_tank = original.at(i);
-
-    for (int s = (int)sorted_tanks.size() - 1; s >= 0; s--) {
-      const Tank *current_checking_tank = sorted_tanks.at(s);
-
-      if ((current_checking_tank->compare_health(current_tank) <= 0)) {
-        sorted_tanks.insert(1 + sorted_tanks.begin() + s, &current_tank);
-        break;
-      }
-
-      if (s == 0) {
-        sorted_tanks.insert(sorted_tanks.begin(), &current_tank);
-        break;
-      }
+    // First add all tanks we want to sort
+    for (int i = begin; i < end; i++) {
+        sorted_tanks.push_back(&original.at(i));
     }
-  }
+
+    for (int i = 0; i < sorted_tanks.size(); i++) {
+        for (int j = i + 1; j < sorted_tanks.size(); j++) {
+            if (sorted_tanks[i]->compare_health(*sorted_tanks[j]) < 0) {
+                // Swap if in wrong order
+                std::swap(sorted_tanks[i], sorted_tanks[j]);
+            }
+        }
+    }
 }
 
 // -----------------------------------------------------------
