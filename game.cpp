@@ -131,26 +131,56 @@ bool Tmpl8::Game::left_of_line(vec2 line_start, vec2 line_end, vec2 point) {
           (line_end.y - line_start.y) * (point.x - line_start.x)) < 0;
 }
 
+// Big-O: O(n²) nested loops
+// changed to Sweep and Prune algorithm
+// Big-O: O(n log n)
+// Bron: https://www.youtube.com/watch?v=eED4bSkYCB8&t=942s
 void Game::check_tank_collision() {
-  for (Tank &tank : tanks) {
-    if (tank.active) {
-      for (Tank &other_tank : tanks) {
-        if (&tank == &other_tank || !other_tank.active)
-          continue;
-
-        vec2 dir = tank.get_position() - other_tank.get_position();
-        float dir_squared_len = dir.sqr_length();
-
-        float col_squared_len =
-            (tank.get_collision_radius() + other_tank.get_collision_radius());
-        col_squared_len *= col_squared_len;
-
-        if (dir_squared_len < col_squared_len) {
-          tank.push(dir.normalized(), 1.f);
+    // Create arrays of tank bounds (min and max x-coordinates)
+    std::vector<std::pair<float, Tank*>> tank_bounds;
+    tank_bounds.reserve(tanks.size());
+    
+    // Fill bounds array with active tanks
+    for (Tank& tank : tanks) {
+        if (tank.active) {
+            float radius = tank.collision_radius;
+            tank_bounds.push_back({tank.position.x - radius, &tank});
+            tank_bounds.push_back({tank.position.x + radius, &tank});
         }
-      }
     }
-  }
+    
+    // Sort bounds by x-coordinate
+    std::sort(tank_bounds.begin(), tank_bounds.end());
+    
+    // Active list of tanks to check for collisions
+    std::vector<Tank*> active_tanks;
+    
+    // Sweep through sorted bounds
+    for (const auto& bound : tank_bounds) {
+        Tank* tank = bound.second;
+        
+        // Check if this is a start or end bound
+        if (bound.first == tank->position.x - tank->collision_radius) {
+            // Start bound - add to active list and check against other active tanks
+            for (Tank* other : active_tanks) {
+                if (tank != other) {
+                    // Check y-coordinates for overlap
+                    float dy = tank->position.y - other->position.y;
+                    float min_y_dist = tank->collision_radius + other->collision_radius;
+                    
+                    if (dy * dy < min_y_dist * min_y_dist) {
+                        // Collision detected - handle it
+                        tank->push((tank->position - other->position).normalized(), 1.f);
+                    }
+                }
+            }
+            active_tanks.push_back(tank);
+        } else {
+            // End bound - remove from active list
+            active_tanks.erase(std::remove(active_tanks.begin(), active_tanks.end(), tank), 
+                              active_tanks.end());
+        }
+    }
 }
 
 void Game::update_tanks() {
