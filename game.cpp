@@ -1,4 +1,5 @@
 #include "precomp.h" // include (only) this in every .cpp file
+#include "thread_pool.h"
 
 constexpr auto num_tanks_blue = 2048;
 constexpr auto num_tanks_red = 2048;
@@ -158,6 +159,12 @@ bool Tmpl8::Game::left_of_line(vec2 line_start, vec2 line_end, vec2 point) {
  * 2. Sort bounds by x-coordinate
  * 3. Sweep through sorted bounds
  * 4. Only check collisions between objects that overlap on the axis
+ * 
+ * Thread Pool Implementation:
+ * - Distributes tank collision checks across multiple CPU cores
+ * - Each thread processes a subset of tanks
+ * - Uses mutex for thread-safe access to shared resources
+ * - Time Complexity: O(n/m) per thread, where n = number of tanks, m = number of threads
  */
 void Game::check_tank_collision() {
   // Create arrays of tank bounds (min and max x-coordinates)
@@ -176,35 +183,56 @@ void Game::check_tank_collision() {
   // Sort bounds by x-coordinate
   std::sort(tank_bounds.begin(), tank_bounds.end());
 
-  // Active list of tanks to check for collisions
-  std::vector<Tank *> active_tanks;
-
-  // Sweep through sorted bounds
-  for (const auto &bound : tank_bounds) {
-    Tank *tank = bound.second;
-
-    // Check if this is a start or end bound
-    if (bound.first == tank->position.x - tank->collision_radius) {
-      // Start bound - add to active list and check against other active tanks
-      for (Tank *other : active_tanks) {
-        if (tank != other) {
-          // Check y-coordinates for overlap
-          float dy = tank->position.y - other->position.y;
-          float min_y_dist = tank->collision_radius + other->collision_radius;
-
-          if (dy * dy < min_y_dist * min_y_dist) {
-            // Collision detected - handle it
-            tank->push((tank->position - other->position).normalized(), 1.f);
+  // Calculate how many bounds per thread
+  const int num_bounds = tank_bounds.size();
+  const int num_threads = std::thread::hardware_concurrency();
+  const int bounds_per_thread = (num_bounds + num_threads - 1) / num_threads; // Ceiling division
+  
+  std::vector<std::future<void>> futures;
+  
+  // Distribute bounds across threads
+  for (int i = 0; i < num_bounds; i += bounds_per_thread) {
+    int end = std::min(i + bounds_per_thread, num_bounds);
+    
+    futures.push_back(thread_pool.enqueue([this, i, end, &tank_bounds]() {
+      // Active list of tanks to check for collisions (local to this thread)
+      std::vector<Tank *> active_tanks;
+      
+      // Process this thread's portion of bounds
+      for (int j = i; j < end; j++) {
+        const auto &bound = tank_bounds[j];
+        Tank *tank = bound.second;
+        
+        // Check if this is a start or end bound
+        if (bound.first == tank->position.x - tank->collision_radius) {
+          // Start bound - add to active list and check against other active tanks
+          for (Tank *other : active_tanks) {
+            if (tank != other) {
+              // Check y-coordinates for overlap
+              float dy = tank->position.y - other->position.y;
+              float min_y_dist = tank->collision_radius + other->collision_radius;
+              
+              if (dy * dy < min_y_dist * min_y_dist) {
+                // Collision detected - handle it
+                std::lock_guard<std::mutex> lock(game_mutex);
+                tank->push((tank->position - other->position).normalized(), 1.f);
+              }
+            }
           }
+          active_tanks.push_back(tank);
+        } else {
+          // End bound - remove from active list
+          active_tanks.erase(
+              std::remove(active_tanks.begin(), active_tanks.end(), tank),
+              active_tanks.end());
         }
       }
-      active_tanks.push_back(tank);
-    } else {
-      // End bound - remove from active list
-      active_tanks.erase(
-          std::remove(active_tanks.begin(), active_tanks.end(), tank),
-          active_tanks.end());
-    }
+    }));
+  }
+  
+  // Wait for all tasks to complete
+  for (auto& future : futures) {
+    future.wait();
   }
 }
 
@@ -302,6 +330,12 @@ void Game::calculate_convex_hull(int first_active, vec2 &point_on_hull) {
  * 1. For each rocket, find the nearest enemy tank
  * 2. Check collision only with the nearest tank
  * 3. Handle collision if detected
+ * 
+ * Thread Pool Implementation:
+ * - Distributes rocket processing across multiple CPU cores
+ * - Each thread processes a subset of rockets
+ * - Uses mutex for thread-safe access to shared resources
+ * - Time Complexity: O(n/m) per thread, where n = number of rockets, m = number of threads
  */
 void Game::update_rockets() {
   // Create a sorted array of active tanks by x-position
@@ -318,33 +352,53 @@ void Game::update_rockets() {
   // Simple merge sort (in-place)
   merge_sort_tanks(sorted_tanks);
 
-  // Check collisions with sorted tanks
-  for (Rocket &rocket : rockets) {
-    rocket.tick();
-
-    // Find tanks in x-range
-    for (Tank *tank : sorted_tanks) {
-      // Skip friendly tanks
-      if (tank->allignment == rocket.allignment)
-        continue;
-
-      // Quick distance check
-      float dx = rocket.position.x - tank->position.x;
-      if (std::abs(dx) > rocket.collision_radius + tank->collision_radius)
-        continue;
-
-      // Check collision
-      if (rocket.intersects(tank->position, tank->collision_radius)) {
-        explosions.push_back(Explosion(&explosion, tank->position));
-
-        if (tank->hit(rocket_hit_value)) {
-          smokes.push_back(Smoke(smoke, tank->position - vec2(7, 24)));
+  // Calculate how many rockets per thread
+  const int num_rockets = rockets.size();
+  const int num_threads = std::thread::hardware_concurrency();
+  const int rockets_per_thread = (num_rockets + num_threads - 1) / num_threads; // Ceiling division
+  
+  std::vector<std::future<void>> futures;
+  
+  // Distribute rockets across threads
+  for (int i = 0; i < num_rockets; i += rockets_per_thread) {
+    int end = std::min(i + rockets_per_thread, num_rockets);
+    
+    futures.push_back(thread_pool.enqueue([this, i, end, &sorted_tanks]() {
+      for (int j = i; j < end; j++) {
+        Rocket& rocket = rockets[j];
+        rocket.tick();
+        
+        // Find tanks in x-range
+        for (Tank* tank : sorted_tanks) {
+          // Skip friendly tanks
+          if (tank->allignment == rocket.allignment)
+            continue;
+          
+          // Quick distance check
+          float dx = rocket.position.x - tank->position.x;
+          if (std::abs(dx) > rocket.collision_radius + tank->collision_radius)
+            continue;
+          
+          // Check collision
+          if (rocket.intersects(tank->position, tank->collision_radius)) {
+            std::lock_guard<std::mutex> lock(game_mutex);
+            explosions.push_back(Explosion(&explosion, tank->position));
+            
+            if (tank->hit(rocket_hit_value)) {
+              smokes.push_back(Smoke(smoke, tank->position - vec2(7, 24)));
+            }
+            
+            rocket.active = false;
+            break;
+          }
         }
-
-        rocket.active = false;
-        break;
       }
-    }
+    }));
+  }
+  
+  // Wait for all tasks to complete
+  for (auto& future : futures) {
+    future.wait();
   }
 }
 
@@ -395,21 +449,67 @@ void Game::disable_rockets_when_collide_forcefield() {
   }
 }
 
+/**
+ * Thread Pool Implementation for Particle Beam Updates
+ * 
+ * This implementation improves performance by:
+ * 1. Distributing particle beam updates across multiple CPU cores
+ * 2. Processing beams in parallel
+ * 3. Using a thread pool to manage worker threads
+ * 4. Synchronizing access to shared resources with mutexes
+ * 
+ * Time Complexity:
+ * - Beam updates: O(n/m) per thread, where n = number of beams, m = number of threads
+ * - Overall: O(n) with m threads
+ * 
+ * Space Complexity: O(m) for thread management
+ * 
+ * Advantages:
+ * - Utilizes all available CPU cores
+ * - Scales with hardware capabilities
+ * - Efficient thread management
+ * - Reduced overall processing time
+ * 
+ * Implementation:
+ * 1. Initialize thread pool with number of hardware cores
+ * 2. Divide beams among threads
+ * 3. Process beams in parallel
+ * 4. Synchronize access to shared resources
+ * 5. Wait for all tasks to complete
+ */
 void Game::update_particle_beams() {
-  for (Particle_beam &particle_beam : particle_beams) {
-    particle_beam.tick(tanks);
-
-    // Damage all tanks within the damage window of the beam (the window is an
-    // axis-aligned bounding box)
-    for (Tank &tank : tanks) {
-      if (tank.active &&
-          particle_beam.rectangle.intersects_circle(
-              tank.get_position(), tank.get_collision_radius())) {
-        if (tank.hit(particle_beam.damage)) {
-          smokes.push_back(Smoke(smoke, tank.position - vec2(0, 48)));
+  // Calculate how many beams per thread
+  const int num_beams = particle_beams.size();
+  const int num_threads = std::thread::hardware_concurrency();
+  const int beams_per_thread = (num_beams + num_threads - 1) / num_threads; // Ceiling division
+  
+  std::vector<std::future<void>> futures;
+  
+  // Distribute beams across threads
+  for (int i = 0; i < num_beams; i += beams_per_thread) {
+    int end = std::min(i + beams_per_thread, num_beams);
+    
+    futures.push_back(thread_pool.enqueue([this, i, end]() {
+      for (int j = i; j < end; j++) {
+        Particle_beam& particle_beam = particle_beams[j];
+        particle_beam.tick(tanks);
+        
+        // Check for tank hits
+        for (Tank& tank : tanks) {
+          if (tank.active && particle_beam.rectangle.intersects_circle(tank.position, tank.collision_radius)) {
+            std::lock_guard<std::mutex> lock(game_mutex);
+            if (tank.hit(particle_beam_hit_value)) {
+              smokes.push_back(Smoke(smoke, tank.position - vec2(7, 24)));
+            }
+          }
         }
       }
-    }
+    }));
+  }
+  
+  // Wait for all tasks to complete
+  for (auto& future : futures) {
+    future.wait();
   }
 }
 

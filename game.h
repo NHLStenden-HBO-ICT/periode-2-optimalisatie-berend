@@ -1,4 +1,5 @@
 #pragma once
+#include "thread_pool.h"
 
 namespace Tmpl8 {
 // forward declarations
@@ -9,6 +10,9 @@ class Particle_beam;
 
 class Game {
 public:
+  // Add a default constructor
+  Game() : thread_pool(std::thread::hardware_concurrency()) {}
+  
   void set_target(Surface *surface) { screen = surface; }
   void init();
   void shutdown();
@@ -24,22 +28,11 @@ public:
 
   Tank &find_closest_enemy(Tank &current_tank);
 
-  void mouse_up(
-      int button) { /* implement if you want to detect mouse button presses */ }
-
-  void mouse_down(
-      int button) { /* implement if you want to detect mouse button presses */ }
-
-  void mouse_move(int x,
-                  int y) { /* implement if you want to detect mouse movement */
-  }
-
-  void key_up(int key) { /* implement if you want to handle keys */ }
-
-  void key_down(int key) { /* implement if you want to handle keys */ }
-
 private:
   Surface *screen;
+
+  ThreadPool thread_pool;
+  std::mutex game_mutex;
 
   vector<Tank> tanks;
   vector<Rocket> rockets;
