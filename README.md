@@ -1,7 +1,7 @@
 # Optimalisatie_Project
 
 <!--toc:start-->
-- [Optimalisatie_Project](#optimalisatieproject)
+- [Optimalisatie_Project](#optimalisatie_project)
   - [Inleiding](#inleiding)
   - [Bottlenecks](#bottlenecks)
   - [Big-O](#big-o)
@@ -16,81 +16,85 @@
 
 ## Inleiding
 
-Met dit document wordt duidelijk gemaakt welke algoritmes er zijn gebruikt en waarom.
-Ook wordt er toegelicht waar en waarom threading is toegepast, er wordt gebruikt gemaakt van de meegeleverde threadpool.
-Aan het einde komt er resultaat te zien van deze twee verbeteringen.
+Met dit document wordt duidelijk gemaakt welke algoritmes er zijn gebruikt en waarom.  
+Ook wordt er toegelicht waar en waarom threading is toegepast — er wordt gebruikgemaakt van de meegeleverde threadpool.  
+Aan het einde komt het resultaat te zien van deze twee verbeteringen.
 
-Vooraf zal er nog kort worden toegelicht welke big O er speelt binnen het code omdat dit in de rubric staat, dit heeft echter geen resultaat op code score.
-Ook wordt er via CLion profiler gekeken naar Bottlenecks (tijd die het duurt om een bepaalde actie uit te voeren).
+Vooraf wordt er nog kort toegelicht welke Big-O er speelt binnen de code (zoals vereist in de rubric), al heeft dit geen invloed op de score.  
+Ook wordt er via de CLion-profiler gekeken naar bottlenecks (de tijd die het kost om een bepaalde actie uit te voeren).
 
 ## Bottlenecks
 
-Met profilling gezien dat paar functies zijn die veel tijd in beslag nemen.
-Deze kwamen in de volgende volgorde in beeld.
+Met profiling is gezien dat er een paar functies zijn die veel tijd in beslag nemen.  
+Deze kwamen in de volgende volgorde in beeld:
 
-- Game::tick
-- Game::update
-- Game::update_rockets
-- Game::draw
-- Game::insertion_sort_tanks_health
-- Game::draw
-- Rocket::intersects
-- Tank::compare_health
+- `Game::tick`
+- `Game::update`
+- `Game::update_rockets`
+- `Game::draw`
+- `Game::insertion_sort_tanks_health`
+- `Game::draw`
+- `Rocket::intersects`
+- `Tank::compare_health`
 
-Mijn focus is op algoritmes dus ik heb heb eerst gefocust op "insertion_sort_tanks_health"
+Mijn focus ligt op algoritmes, dus ik heb eerst gefocust op `insertion_sort_tanks_health`.
 
 ## Big-O
 
 ### Eerste big-o
 
-Big-O van insertion_sort_tanks_health = O(n^2)
-Big-O van quicksort = O(n log n)
-Ik heb dus voor quicksort gekozen omdat insertion sort met groote van de tanks trager wordt.
+- **`insertion_sort_tanks_health`**
+  - Was: `O(n^2)`
+  - Nu: `O(n log n)` (Quicksort gekozen)
 
-Big-O van check_tank_collision = O(n^2)
-Big-O van Sweep and prune O(n log n)
-Zag deze op YT voorbij komen als 1,5 uur naar 3 minuten verbetering
+- **`check_tank_collision`**
+  - Was: `O(n^2)`
+  - Nu: `O(n log n)` (Sweep and prune gekozen — zag ik op YouTube, ging van 1,5 uur naar 3 minuten)
 
-Big-O van update_rockets = O(n^2)
-Big-O van Merge = O(n log n)
-Deze heb ik toegevoegd omdat ook al zelfde big-O stopt code eerder wanneer mogelijk.
+- **`update_rockets`**
+  - Was: `O(n^2)`
+  - Nu: `O(n log n)` (Merge sort — zelfde Big-O maar stopt eerder wanneer mogelijk)
 
 ## Algoritmes
 
 ### Eerste algoritme
 
-Ik heb de insertion_sort_tanks_health aangepast naar een quicksort algoritme.
-Dit heb ik verwerk in game.cpp
+Ik heb de `insertion_sort_tanks_health` aangepast naar een quicksort-algoritme.  
+Dit heb ik verwerkt in `game.cpp`.
 
-Tweede algoritme is sweep and prune
-Deze gaf direct van 1.1 naar 2.0 verbetering
+**Tweede algoritme:** *Sweep and prune*  
+Deze gaf direct verbetering van score: **1.1 → 2.0**
 
-Derde algoritme is merge sort
-Deze gaf weinig tot geen verbetering qua score
-Originele wordt trager hoe groter data zet
-Met merge sort kan je snellere code krijgen omdat het eerder stop waar mogelijk.
+**Derde algoritme:** *Merge sort*  
+Gaf weinig tot geen verbetering qua score, maar de originele werd trager bij grotere datasets.  
+Merge sort stopt eerder en geeft op termijn snellere code.
 
 ## Threading
 
-Ik heb de threadpool gebruikt die is meegeleverd aan de code.
-Ik heb vervolgends de hardware threads aantal gepakt.
-Vervolgens heb ik threading voor de gemak toegevoegd aan de functions waarbij ik een algoritme aangepast van game.cpp
+Ik heb de meegeleverde threadpool gebruikt.  
+Het aantal hardware threads wordt opgehaald en vervolgens gebruik ik multithreading bij de functies waarbij ik een algoritme heb aangepast in `game.cpp`.
 
 ## Resultaat
 
-Resultaat van dit alles is:
-1.0 -> 3.3
+Resultaat van deze optimalisaties:
+
+**Score:** `1.0` → `3.3`
 
 ## Bronnen
 
-- [Dijkstra Algorithm Geek for geeks]("https://www.geeksforgeeks.org/introduction-to-dijkstras-shortest-path-algorithm/")
-- [Learn Quick Sort in 13 minutes ⚡]("https://www.youtube.com/watch?v=Vtckgz38QHs")
-- [Building Collision Simulation ...]("https://www.youtube.com/watch?v=eED4bSkYCB8&t=942s")
-- [Learn Merge Sort in 13 minutes 🔪]("https://www.youtube.com/watch?v=3j0SWDX4AtU")
+- [Dijkstra Algorithm - GeeksforGeeks](https://www.geeksforgeeks.org/introduction-to-dijkstras-shortest-path-algorithm/)
+- [Learn Quick Sort in 13 minutes ⚡](https://www.youtube.com/watch?v=Vtckgz38QHs)
+- [Building Collision Simulation (YT)](https://www.youtube.com/watch?v=eED4bSkYCB8&t=942s)
+- [Learn Merge Sort in 13 minutes 🔪](https://www.youtube.com/watch?v=3j0SWDX4AtU)
 
 ## Build and run van het project
 
-Nvim  -> CMakeBuild
-      -> CMakeBuildType
-        -> Debug of Release
+Gebruik:
 
+- `Neovim`
+- `CMakeBuild`
+  - CMakeBuildType → `Debug` of `Release`
+- CMakeRun
+
+- Jetbrain kan ook.
+- Die komt direct met pop-up wat je wild Debug is default in dropdown kan je soort kiezen (debug of release heb ik gebruikt)
