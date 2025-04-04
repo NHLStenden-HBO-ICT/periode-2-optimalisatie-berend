@@ -131,8 +131,7 @@ bool Tmpl8::Game::left_of_line(vec2 line_start, vec2 line_end, vec2 point) {
           (line_end.y - line_start.y) * (point.x - line_start.x)) < 0;
 }
 
-void Game::check_tank_collision()
-{
+void Game::check_tank_collision() {
   for (Tank &tank : tanks) {
     if (tank.active) {
       for (Tank &other_tank : tanks) {
@@ -154,8 +153,7 @@ void Game::check_tank_collision()
   }
 }
 
-void Game::update_tanks()
-{
+void Game::update_tanks() {
   for (Tank &tank : tanks) {
     if (tank.active) {
       // Move tanks according to speed and nudges (see above) also reload
@@ -177,8 +175,8 @@ void Game::update_tanks()
   }
 }
 
-void Game::find_first_and_most_left_tank(int &first_active, vec2 &point_on_hull)
-{
+void Game::find_first_and_most_left_tank(int &first_active,
+                                         vec2 &point_on_hull) {
   first_active = 0;
   for (Tank &tank : tanks) {
     if (tank.active) {
@@ -197,8 +195,7 @@ void Game::find_first_and_most_left_tank(int &first_active, vec2 &point_on_hull)
   }
 }
 
-void Game::calculate_convex_hull(int first_active, vec2 &point_on_hull)
-{
+void Game::calculate_convex_hull(int first_active, vec2 &point_on_hull) {
   while (true) {
     // Add last found point
     forcefield_hull.push_back(point_on_hull);
@@ -227,8 +224,7 @@ void Game::calculate_convex_hull(int first_active, vec2 &point_on_hull)
   }
 }
 
-void Game::update_rockets()
-{
+void Game::update_rockets() {
   for (Rocket &rocket : rockets) {
     rocket.tick();
 
@@ -250,15 +246,14 @@ void Game::update_rockets()
   }
 }
 
-void Game::disable_rockets_when_collide_forcefield()
-{
+void Game::disable_rockets_when_collide_forcefield() {
   for (Rocket &rocket : rockets) {
     if (rocket.active) {
       for (size_t i = 0; i < forcefield_hull.size(); i++) {
         if (circle_segment_intersect(
-            forcefield_hull.at(i),
-            forcefield_hull.at((i + 1) % forcefield_hull.size()),
-            rocket.position, rocket.collision_radius)) {
+                forcefield_hull.at(i),
+                forcefield_hull.at((i + 1) % forcefield_hull.size()),
+                rocket.position, rocket.collision_radius)) {
           explosions.push_back(Explosion(&explosion, rocket.position));
           rocket.active = false;
         }
@@ -267,8 +262,7 @@ void Game::disable_rockets_when_collide_forcefield()
   }
 }
 
-void Game::update_particle_beams()
-{
+void Game::update_particle_beams() {
   for (Particle_beam &particle_beam : particle_beams) {
     particle_beam.tick(tanks);
 
@@ -401,7 +395,7 @@ void Game::draw() {
 
     const int begin = ((t < 1) ? 0 : num_tanks_blue);
     std::vector<const Tank *> sorted_tanks;
-    insertion_sort_tanks_health(tanks, sorted_tanks, begin, begin + NUM_TANKS);
+    quick_sort_tanks_health(tanks, sorted_tanks, begin, begin + NUM_TANKS);
     sorted_tanks.erase(
         std::remove_if(sorted_tanks.begin(), sorted_tanks.end(),
                        [](const Tank *tank) { return !tank->active; }),
@@ -433,26 +427,26 @@ void Game::draw() {
 // Step 2: [90, 70] 60 [30, 50] (sort each side)
 // Final:  [90, 70, 60, 50, 30] (sorted by health)
 // -----------------------------------------------------------
-void Tmpl8::Game::insertion_sort_tanks_health(
+void Game::quick_sort_tanks_health(
     const std::vector<Tank> &original, std::vector<const Tank *> &sorted_tanks,
-    int begin, int end) {
-    const int NUM_TANKS = end - begin;
-    sorted_tanks.clear();  // Clear existing tanks
-    sorted_tanks.reserve(NUM_TANKS);
+    const int begin, const int end) {
+  const int NUM_TANKS = end - begin;
+  sorted_tanks.clear(); // Clear existing tanks
+  sorted_tanks.reserve(NUM_TANKS);
 
-    // First add all tanks we want to sort
-    for (int i = begin; i < end; i++) {
-        sorted_tanks.push_back(&original.at(i));
-    }
+  // First add all tanks we want to sort
+  for (int i = begin; i < end; i++) {
+    sorted_tanks.push_back(&original.at(i));
+  }
 
-    for (int i = 0; i < sorted_tanks.size(); i++) {
-        for (int j = i + 1; j < sorted_tanks.size(); j++) {
-            if (sorted_tanks[i]->compare_health(*sorted_tanks[j]) < 0) {
-                // Swap if in wrong order
-                std::swap(sorted_tanks[i], sorted_tanks[j]);
-            }
-        }
+  for (int i = 0; i < sorted_tanks.size(); i++) {
+    for (int j = i + 1; j < sorted_tanks.size(); j++) {
+      if (sorted_tanks[i]->compare_health(*sorted_tanks[j]) < 0) {
+        // Swap if in wrong order
+        std::swap(sorted_tanks[i], sorted_tanks[j]);
+      }
     }
+  }
 }
 
 // -----------------------------------------------------------
