@@ -16,8 +16,8 @@ public:
   void draw();
   void tick(float deltaTime);
   static void quick_sort_tanks_health(const std::vector<Tank> &original,
-                                   std::vector<const Tank *> &sorted_tanks,
-                                   int begin, int end);
+                                      std::vector<const Tank *> &sorted_tanks,
+                                      int begin, int end);
   void draw_health_bars(const std::vector<const Tank *> &sorted_tanks,
                         const int team);
   void measure_performance();
@@ -61,7 +61,9 @@ private:
   void update_tanks();
   void find_first_and_most_left_tank(int &first_active, vec2 &point_on_hull);
   void calculate_convex_hull(int first_active, vec2 &point_on_hull);
+  void merge_sort_tanks(const vector<Tank *> &tanks);
   void update_rockets();
+  void merge_sort_tanks(std::vector<Tank *> &tanks);
   void disable_rockets_when_collide_forcefield();
   void update_particle_beams();
 };

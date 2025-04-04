@@ -136,51 +136,52 @@ bool Tmpl8::Game::left_of_line(vec2 line_start, vec2 line_end, vec2 point) {
 // Big-O: O(n log n)
 // Bron: https://www.youtube.com/watch?v=eED4bSkYCB8&t=942s
 void Game::check_tank_collision() {
-    // Create arrays of tank bounds (min and max x-coordinates)
-    std::vector<std::pair<float, Tank*>> tank_bounds;
-    tank_bounds.reserve(tanks.size());
-    
-    // Fill bounds array with active tanks
-    for (Tank& tank : tanks) {
-        if (tank.active) {
-            float radius = tank.collision_radius;
-            tank_bounds.push_back({tank.position.x - radius, &tank});
-            tank_bounds.push_back({tank.position.x + radius, &tank});
-        }
+  // Create arrays of tank bounds (min and max x-coordinates)
+  std::vector<std::pair<float, Tank *>> tank_bounds;
+  tank_bounds.reserve(tanks.size());
+
+  // Fill bounds array with active tanks
+  for (Tank &tank : tanks) {
+    if (tank.active) {
+      float radius = tank.collision_radius;
+      tank_bounds.push_back({tank.position.x - radius, &tank});
+      tank_bounds.push_back({tank.position.x + radius, &tank});
     }
-    
-    // Sort bounds by x-coordinate
-    std::sort(tank_bounds.begin(), tank_bounds.end());
-    
-    // Active list of tanks to check for collisions
-    std::vector<Tank*> active_tanks;
-    
-    // Sweep through sorted bounds
-    for (const auto& bound : tank_bounds) {
-        Tank* tank = bound.second;
-        
-        // Check if this is a start or end bound
-        if (bound.first == tank->position.x - tank->collision_radius) {
-            // Start bound - add to active list and check against other active tanks
-            for (Tank* other : active_tanks) {
-                if (tank != other) {
-                    // Check y-coordinates for overlap
-                    float dy = tank->position.y - other->position.y;
-                    float min_y_dist = tank->collision_radius + other->collision_radius;
-                    
-                    if (dy * dy < min_y_dist * min_y_dist) {
-                        // Collision detected - handle it
-                        tank->push((tank->position - other->position).normalized(), 1.f);
-                    }
-                }
-            }
-            active_tanks.push_back(tank);
-        } else {
-            // End bound - remove from active list
-            active_tanks.erase(std::remove(active_tanks.begin(), active_tanks.end(), tank), 
-                              active_tanks.end());
+  }
+
+  // Sort bounds by x-coordinate
+  std::sort(tank_bounds.begin(), tank_bounds.end());
+
+  // Active list of tanks to check for collisions
+  std::vector<Tank *> active_tanks;
+
+  // Sweep through sorted bounds
+  for (const auto &bound : tank_bounds) {
+    Tank *tank = bound.second;
+
+    // Check if this is a start or end bound
+    if (bound.first == tank->position.x - tank->collision_radius) {
+      // Start bound - add to active list and check against other active tanks
+      for (Tank *other : active_tanks) {
+        if (tank != other) {
+          // Check y-coordinates for overlap
+          float dy = tank->position.y - other->position.y;
+          float min_y_dist = tank->collision_radius + other->collision_radius;
+
+          if (dy * dy < min_y_dist * min_y_dist) {
+            // Collision detected - handle it
+            tank->push((tank->position - other->position).normalized(), 1.f);
+          }
         }
+      }
+      active_tanks.push_back(tank);
+    } else {
+      // End bound - remove from active list
+      active_tanks.erase(
+          std::remove(active_tanks.begin(), active_tanks.end(), tank),
+          active_tanks.end());
     }
+  }
 }
 
 void Game::update_tanks() {
@@ -255,20 +256,44 @@ void Game::calculate_convex_hull(int first_active, vec2 &point_on_hull) {
 }
 
 // TODO: change this.
-// Add this in a seperate thread
+// Created a merge_sort_tanks function to sort the tanks by x-position
+// Big-O: O(n log n) neemt meer memmory
 void Game::update_rockets() {
+  // Create a sorted array of active tanks by x-position
+  std::vector<Tank *> sorted_tanks;
+  sorted_tanks.reserve(tanks.size());
+
+  // Add active tanks to the array
+  for (Tank &tank : tanks) {
+    if (tank.active) {
+      sorted_tanks.push_back(&tank);
+    }
+  }
+
+  // Simple merge sort (in-place)
+  merge_sort_tanks(sorted_tanks);
+
+  // Check collisions with sorted tanks
   for (Rocket &rocket : rockets) {
     rocket.tick();
 
-    // Check if rocket collides with enemy tank, spawn explosion, and if tank is
-    // destroyed spawn a smoke plume
-    for (Tank &tank : tanks) {
-      if (tank.active && (tank.allignment != rocket.allignment) &&
-          rocket.intersects(tank.position, tank.collision_radius)) {
-        explosions.push_back(Explosion(&explosion, tank.position));
+    // Find tanks in x-range
+    for (Tank *tank : sorted_tanks) {
+      // Skip friendly tanks
+      if (tank->allignment == rocket.allignment)
+        continue;
 
-        if (tank.hit(rocket_hit_value)) {
-          smokes.push_back(Smoke(smoke, tank.position - vec2(7, 24)));
+      // Quick distance check
+      float dx = rocket.position.x - tank->position.x;
+      if (std::abs(dx) > rocket.collision_radius + tank->collision_radius)
+        continue;
+
+      // Check collision
+      if (rocket.intersects(tank->position, tank->collision_radius)) {
+        explosions.push_back(Explosion(&explosion, tank->position));
+
+        if (tank->hit(rocket_hit_value)) {
+          smokes.push_back(Smoke(smoke, tank->position - vec2(7, 24)));
         }
 
         rocket.active = false;
@@ -276,6 +301,37 @@ void Game::update_rockets() {
       }
     }
   }
+}
+
+// Simple in-place merge sort
+void Game::merge_sort_tanks(std::vector<Tank *> &tanks) {
+  if (tanks.size() <= 1)
+    return;
+
+  // Split array in half
+  const int mid = tanks.size() / 2;
+  std::vector<Tank *> left(tanks.begin(), tanks.begin() + mid);
+  std::vector<Tank *> right(tanks.begin() + mid, tanks.end());
+
+  // Recursively sort halves
+  merge_sort_tanks(left);
+  merge_sort_tanks(right);
+
+  // Merge sorted halves
+  int i = 0, j = 0, k = 0;
+  while (i < left.size() && j < right.size()) {
+    if (left[i]->position.x <= right[j]->position.x) {
+      tanks[k++] = left[i++];
+    } else {
+      tanks[k++] = right[j++];
+    }
+  }
+
+  // Copy remaining elements
+  while (i < left.size())
+    tanks[k++] = left[i++];
+  while (j < right.size())
+    tanks[k++] = right[j++];
 }
 
 void Game::disable_rockets_when_collide_forcefield() {
