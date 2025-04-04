@@ -71,7 +71,7 @@ void Game::init() {
   // Spawn blue tanks
   for (int i = 0; i < num_tanks_blue; i++) {
     vec2 position{start_blue_x + ((i % max_rows) * spacing),
-                  start_blue_y + ((i / max_rows) * spacing)};
+                        start_blue_y + ((i / max_rows) * spacing)};
     tanks.push_back(Tank(position.x, position.y, BLUE, &tank_blue, &smoke,
                          1100.f, position.y + 16, tank_radius, tank_max_health,
                          tank_max_speed));
@@ -427,9 +427,9 @@ void Game::draw() {
 // Step 2: [90, 70] 60 [30, 50] (sort each side)
 // Final:  [90, 70, 60, 50, 30] (sorted by health)
 // -----------------------------------------------------------
-void Game::quick_sort_tanks_health(
-    const std::vector<Tank> &original, std::vector<const Tank *> &sorted_tanks,
-    const int begin, const int end) {
+void Game::quick_sort_tanks_health(const std::vector<Tank> &original,
+                                   std::vector<const Tank *> &sorted_tanks,
+                                   const int begin, const int end) {
   const int NUM_TANKS = end - begin;
   sorted_tanks.clear(); // Clear existing tanks
   sorted_tanks.reserve(NUM_TANKS);
@@ -439,11 +439,39 @@ void Game::quick_sort_tanks_health(
     sorted_tanks.push_back(&original.at(i));
   }
 
-  for (int i = 0; i < sorted_tanks.size(); i++) {
-    for (int j = i + 1; j < sorted_tanks.size(); j++) {
-      if (sorted_tanks[i]->compare_health(*sorted_tanks[j]) < 0) {
-        // Swap if in wrong order
-        std::swap(sorted_tanks[i], sorted_tanks[j]);
+  if (!sorted_tanks.empty()) {
+    // Stack for tracking ranges to sort (replaces recursion)
+    vector<pair<int, int>> ranges;
+    ranges.push_back({0, sorted_tanks.size() - 1});
+
+    while (!ranges.empty()) {
+      int low = ranges.back().first;
+      int high = ranges.back().second;
+      ranges.pop_back();
+
+      if (low < high) {
+        // Choose middle element as pivot
+        // If float change to int to avoid errors
+        int mid = low + (high - low) / 2.0f;
+        int mid_int = static_cast<int>(mid);
+        const Tank *pivot = sorted_tanks[mid_int];
+
+        // Move pivot to end
+        std::swap(sorted_tanks[mid_int], sorted_tanks[high]);
+
+        // Partition around pivot
+        int i = low;
+        for (int j = low; j < high; j++) {
+          if (sorted_tanks[j]->compare_health(*pivot) >= 0) {
+            std::swap(sorted_tanks[i], sorted_tanks[j]);
+            i++;
+          }
+        }
+        std::swap(sorted_tanks[i], sorted_tanks[high]);
+
+        // Add ranges for both sides of pivot
+        ranges.push_back({low, i - 1});
+        ranges.push_back({i + 1, high});
       }
     }
   }
@@ -453,7 +481,7 @@ void Game::quick_sort_tanks_health(
 // Draw the health bars based on the given tanks health values
 // -----------------------------------------------------------
 void Tmpl8::Game::draw_health_bars(
-    const std::vector<const Tank *> &sorted_tanks, const int team) {
+  const std::vector<const Tank *> &sorted_tanks, const int team) {
   int health_bar_start_x = (team < 1) ? 0 : (SCRWIDTH - HEALTHBAR_OFFSET) - 1;
   int health_bar_end_x =
       (team < 1) ? health_bar_width : health_bar_start_x + health_bar_width - 1;
@@ -496,7 +524,7 @@ void Tmpl8::Game::draw_health_bars(
 // Updating REF_PERFORMANCE at the top of this file with the value
 // on your machine gives you an idea of the speedup your optimizations give
 // -----------------------------------------------------------
-void Tmpl8::Game::measure_performance() {
+void Game::measure_performance() {
   char buffer[128];
   if (frame_count >= max_frames) {
     if (!lock_update) {
