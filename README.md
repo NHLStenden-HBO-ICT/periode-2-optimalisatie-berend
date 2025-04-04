@@ -78,3 +78,4 @@ Met merge sort kan je snellere code krijgen omdat het eerder stop waar mogelijk.
 - [Dijkstra Algorithm Geek for geeks]("https://www.geeksforgeeks.org/introduction-to-dijkstras-shortest-path-algorithm/")
 - [Learn Quick Sort in 13 minutes ⚡]("https://www.youtube.com/watch?v=Vtckgz38QHs")
 - [Building Collision Simulation ...]("https://www.youtube.com/watch?v=eED4bSkYCB8&t=942s")
+- [Learn Merge Sort in 13 minutes 🔪]("https://www.youtube.com/watch?v=3j0SWDX4AtU")

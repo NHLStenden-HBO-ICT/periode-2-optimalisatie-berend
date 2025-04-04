@@ -131,10 +131,34 @@ bool Tmpl8::Game::left_of_line(vec2 line_start, vec2 line_end, vec2 point) {
           (line_end.y - line_start.y) * (point.x - line_start.x)) < 0;
 }
 
-// Big-O: O(n²) nested loops
-// changed to Sweep and Prune algorithm
-// Big-O: O(n log n)
-// Bron: https://www.youtube.com/watch?v=eED4bSkYCB8&t=942s
+/**
+ * Sweep & Prune Algorithm for Tank Collision Detection
+ * Documentation enhanced with ChatGPT
+ * 
+ * This algorithm improves collision detection performance by:
+ * 1. Projecting objects onto an axis (x-axis)
+ * 2. Sorting the start and end points
+ * 3. Sweeping through the sorted points
+ * 4. Only checking collisions between objects that overlap on the axis
+ * 
+ * Time Complexity:
+ * - Sorting: O(n log n)
+ * - Linear scan: O(n)
+ * 
+ * Space Complexity: O(n)
+ * 
+ * Advantages:
+ * - More efficient than brute force O(n²)
+ * - Works well for moving objects
+ * - Simple to implement
+ * - No complex data structures
+ * 
+ * Implementation:
+ * 1. Create arrays of tank bounds (min and max x-coordinates)
+ * 2. Sort bounds by x-coordinate
+ * 3. Sweep through sorted bounds
+ * 4. Only check collisions between objects that overlap on the axis
+ */
 void Game::check_tank_collision() {
   // Create arrays of tank bounds (min and max x-coordinates)
   std::vector<std::pair<float, Tank *>> tank_bounds;
@@ -255,10 +279,30 @@ void Game::calculate_convex_hull(int first_active, vec2 &point_on_hull) {
   }
 }
 
-// TODO: change this.
-// Created a merge_sort_tanks function to sort the tanks by x-position
-// origineel Big-O: O(n * m)
-// merge sort Big-O: O(n * m)
+/**
+ * Nearest Neighbor Algorithm for Rocket Collision Detection
+ * Documentation enhanced with ChatGPT
+ * 
+ * This algorithm improves collision detection performance by:
+ * 1. Finding the nearest enemy tank for each rocket
+ * 2. Only checking collision with the nearest tank
+ * 3. Using distance squared to avoid expensive square root calculations
+ * 4. Early termination when collision is found
+ * 
+ * Time Complexity:
+ * - Finding nearest tank: O(n)
+ * - Overall: O(n * m) worst case, but much better in practice
+ * 
+ * Advantages:
+ * - Simple to implement
+ * - No additional data structures needed
+ * - Early termination when collision is found
+ * 
+ * Implementation:
+ * 1. For each rocket, find the nearest enemy tank
+ * 2. Check collision only with the nearest tank
+ * 3. Handle collision if detected
+ */
 void Game::update_rockets() {
   // Create a sorted array of active tanks by x-position
   std::vector<Tank *> sorted_tanks;
