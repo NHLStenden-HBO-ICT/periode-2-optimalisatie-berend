@@ -307,7 +307,8 @@ vector<vec2> Terrain::get_route(const Tank &tank, const vec2 &target) {
         current_route.push_back(exit);
         route_found = true;
         break;
-      } else if (!exit->visited) {
+      }
+      if (!exit->visited) {
         exit->visited = true;
         visited.push_back(exit);
         queue.push(current_route);

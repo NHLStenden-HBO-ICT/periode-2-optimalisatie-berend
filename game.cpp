@@ -71,7 +71,7 @@ void Game::init() {
   // Spawn blue tanks
   for (int i = 0; i < num_tanks_blue; i++) {
     vec2 position{start_blue_x + ((i % max_rows) * spacing),
-                        start_blue_y + ((i / max_rows) * spacing)};
+                  start_blue_y + ((i / max_rows) * spacing)};
     tanks.push_back(Tank(position.x, position.y, BLUE, &tank_blue, &smoke,
                          1100.f, position.y + 16, tank_radius, tank_max_health,
                          tank_max_speed));
@@ -224,6 +224,8 @@ void Game::calculate_convex_hull(int first_active, vec2 &point_on_hull) {
   }
 }
 
+// TODO: change this.
+// Add this in a seperate thread
 void Game::update_rockets() {
   for (Rocket &rocket : rockets) {
     rocket.tick();
@@ -481,7 +483,7 @@ void Game::quick_sort_tanks_health(const std::vector<Tank> &original,
 // Draw the health bars based on the given tanks health values
 // -----------------------------------------------------------
 void Tmpl8::Game::draw_health_bars(
-  const std::vector<const Tank *> &sorted_tanks, const int team) {
+    const std::vector<const Tank *> &sorted_tanks, const int team) {
   int health_bar_start_x = (team < 1) ? 0 : (SCRWIDTH - HEALTHBAR_OFFSET) - 1;
   int health_bar_end_x =
       (team < 1) ? health_bar_width : health_bar_start_x + health_bar_width - 1;
