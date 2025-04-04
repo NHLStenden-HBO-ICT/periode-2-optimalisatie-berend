@@ -71,7 +71,14 @@ Met merge sort kan je snellere code krijgen omdat het eerder stop waar mogelijk.
 
 ## Threading
 
+Ik heb de threadpool gebruikt die is meegeleverd aan de code.
+Ik heb vervolgends de hardware threads aantal gepakt.
+Vervolgens heb ik threading voor de gemak toegevoegd aan de functions waarbij ik een algoritme aangepast van game.cpp
+
 ## Resultaat
+
+Resultaat van dit alles is:
+1.0 -> 3.3
 
 ## Bronnen
 
