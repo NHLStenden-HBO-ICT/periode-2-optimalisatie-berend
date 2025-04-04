@@ -257,7 +257,8 @@ void Game::calculate_convex_hull(int first_active, vec2 &point_on_hull) {
 
 // TODO: change this.
 // Created a merge_sort_tanks function to sort the tanks by x-position
-// Big-O: O(n log n) neemt meer memmory
+// origineel Big-O: O(n * m)
+// merge sort Big-O: O(n * m)
 void Game::update_rockets() {
   // Create a sorted array of active tanks by x-position
   std::vector<Tank *> sorted_tanks;

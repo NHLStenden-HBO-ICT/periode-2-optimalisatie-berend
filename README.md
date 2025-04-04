@@ -50,6 +50,10 @@ Big-O van check_tank_collision = O(n^2)
 Big-O van Sweep and prune O(n log n)
 Zag deze op YT voorbij komen als 1,5 uur naar 3 minuten verbetering
 
+Big-O van update_rockets = O(n^2)
+Big-O van Merge = O(n log n)
+Deze heb ik toegevoegd omdat ook al zelfde big-O stopt code eerder wanneer mogelijk.
+
 ## Algoritmes
 
 ### Eerste algoritme
@@ -59,6 +63,11 @@ Dit heb ik verwerk in game.cpp
 
 Tweede algoritme is sweep and prune
 Deze gaf direct van 1.1 naar 2.0 verbetering
+
+Derde algoritme is merge sort
+Deze gaf weinig tot geen verbetering qua score
+Originele wordt trager hoe groter data zet
+Met merge sort kan je snellere code krijgen omdat het eerder stop waar mogelijk.
 
 ## Threading
 
