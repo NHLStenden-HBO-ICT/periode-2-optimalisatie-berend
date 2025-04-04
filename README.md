@@ -46,12 +46,19 @@ Big-O van insertion_sort_tanks_health = O(n^2)
 Big-O van quicksort = O(n log n)
 Ik heb dus voor quicksort gekozen omdat insertion sort met groote van de tanks trager wordt.
 
+Big-O van check_tank_collision = O(n^2)
+Big-O van Sweep and prune O(n log n)
+Zag deze op YT voorbij komen als 1,5 uur naar 3 minuten verbetering
+
 ## Algoritmes
 
 ### Eerste algoritme
 
 Ik heb de insertion_sort_tanks_health aangepast naar een quicksort algoritme.
 Dit heb ik verwerk in game.cpp
+
+Tweede algoritme is sweep and prune
+Deze gaf direct van 1.1 naar 2.0 verbetering
 
 ## Threading
 
@@ -61,4 +68,4 @@ Dit heb ik verwerk in game.cpp
 
 - [Dijkstra Algorithm Geek for geeks]("https://www.geeksforgeeks.org/introduction-to-dijkstras-shortest-path-algorithm/")
 - [Learn Quick Sort in 13 minutes ⚡]("https://www.youtube.com/watch?v=Vtckgz38QHs")
-
+- [Building Collision Simulation ...]("https://www.youtube.com/watch?v=eED4bSkYCB8&t=942s")
