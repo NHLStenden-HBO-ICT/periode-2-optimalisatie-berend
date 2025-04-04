@@ -31,15 +31,13 @@ bool Rocket::intersects(vec2 position_other, float radius_other) const
 {
     //Note: Uses squared lengths to remove expensive square roots
     float distance_sqr = (position_other - position).sqr_length();
+    float collision_radius_sum = collision_radius + radius_other;
 
-    if (distance_sqr <= ((collision_radius + radius_other) * (collision_radius + radius_other)))
+    if (distance_sqr <= (collision_radius_sum * collision_radius_sum))
     {
         return true;
     }
-    else
-    {
-        return false;
-    }
+    return false;
 }
 
 } // namespace Tmpl8

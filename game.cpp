@@ -131,23 +131,8 @@ bool Tmpl8::Game::left_of_line(vec2 line_start, vec2 line_end, vec2 point) {
           (line_end.y - line_start.y) * (point.x - line_start.x)) < 0;
 }
 
-// -----------------------------------------------------------
-// Update the game state:
-// Move all objects
-// Update sprite frames
-// Collision detection
-// Targeting etc..
-// -----------------------------------------------------------
-void Game::update(float deltaTime) {
-  // Calculate the route to the destination for each tank using BFS
-  // Initializing routes here so it gets counted for performance..
-  if (frame_count == 0) {
-    for (Tank &t : tanks) {
-      t.set_route(background_terrain.get_route(t, t.target));
-    }
-  }
-
-  // Check tank collision and nudge tanks away from each other
+void Game::check_tank_collision()
+{
   for (Tank &tank : tanks) {
     if (tank.active) {
       for (Tank &other_tank : tanks) {
@@ -167,8 +152,10 @@ void Game::update(float deltaTime) {
       }
     }
   }
+}
 
-  // Update tanks
+void Game::update_tanks()
+{
   for (Tank &tank : tanks) {
     if (tank.active) {
       // Move tanks according to speed and nudges (see above) also reload
@@ -188,24 +175,18 @@ void Game::update(float deltaTime) {
       }
     }
   }
+}
 
-  // Update smoke plumes
-  for (Smoke &smoke : smokes) {
-    smoke.tick();
-  }
-
-  // Calculate "force field" around active tanks
-  forcefield_hull.clear();
-
-  // Find first active tank (this loop is a bit disgusting, fix?)
-  int first_active = 0;
+void Game::find_first_and_most_left_tank(int &first_active, vec2 &point_on_hull)
+{
+  first_active = 0;
   for (Tank &tank : tanks) {
     if (tank.active) {
       break;
     }
     first_active++;
   }
-  vec2 point_on_hull = tanks.at(first_active).position;
+  point_on_hull = tanks.at(first_active).position;
   // Find left most tank position
   for (Tank &tank : tanks) {
     if (tank.active) {
@@ -214,8 +195,10 @@ void Game::update(float deltaTime) {
       }
     }
   }
+}
 
-  // Calculate convex hull for 'rocket barrier'
+void Game::calculate_convex_hull(int first_active, vec2 &point_on_hull)
+{
   while (true) {
     // Add last found point
     forcefield_hull.push_back(point_on_hull);
@@ -242,8 +225,10 @@ void Game::update(float deltaTime) {
       break;
     }
   }
+}
 
-  // Update rockets
+void Game::update_rockets()
+{
   for (Rocket &rocket : rockets) {
     rocket.tick();
 
@@ -263,31 +248,27 @@ void Game::update(float deltaTime) {
       }
     }
   }
+}
 
-  // Disable rockets if they collide with the "forcefield"
-  // hint: a point to convex hull intersection test might be better here? :)
-  // (Disable if outside)
+void Game::disable_rockets_when_collide_forcefield()
+{
   for (Rocket &rocket : rockets) {
     if (rocket.active) {
       for (size_t i = 0; i < forcefield_hull.size(); i++) {
         if (circle_segment_intersect(
-                forcefield_hull.at(i),
-                forcefield_hull.at((i + 1) % forcefield_hull.size()),
-                rocket.position, rocket.collision_radius)) {
+            forcefield_hull.at(i),
+            forcefield_hull.at((i + 1) % forcefield_hull.size()),
+            rocket.position, rocket.collision_radius)) {
           explosions.push_back(Explosion(&explosion, rocket.position));
           rocket.active = false;
         }
       }
     }
   }
+}
 
-  // Remove exploded rockets with remove erase idiom
-  rockets.erase(
-      std::remove_if(rockets.begin(), rockets.end(),
-                     [](const Rocket &rocket) { return !rocket.active; }),
-      rockets.end());
-
-  // Update particle beams
+void Game::update_particle_beams()
+{
   for (Particle_beam &particle_beam : particle_beams) {
     particle_beam.tick(tanks);
 
@@ -303,6 +284,61 @@ void Game::update(float deltaTime) {
       }
     }
   }
+}
+
+// -----------------------------------------------------------
+// Update the game state:
+// Move all objects
+// Update sprite frames
+// Collision detection
+// Targeting etc..
+// -----------------------------------------------------------
+void Game::update(float deltaTime) {
+  // Calculate the route to the destination for each tank using BFS
+  // Initializing routes here so it gets counted for performance..
+  if (frame_count == 0) {
+    for (Tank &t : tanks) {
+      t.set_route(background_terrain.get_route(t, t.target));
+    }
+  }
+  // Update smoke plumes
+  for (Smoke &smoke : smokes) {
+    smoke.tick();
+  }
+
+  // Check tank collision and nudge tanks away from each other
+  check_tank_collision();
+
+  // Update tanks
+  update_tanks();
+
+  // Calculate "force field" around active tanks
+  forcefield_hull.clear();
+
+  // Find first active tank (this loop is a bit disgusting, fix?)
+  int first_active;
+  vec2 point_on_hull{};
+  find_first_and_most_left_tank(first_active, point_on_hull);
+
+  // Calculate convex hull for 'rocket barrier'
+  calculate_convex_hull(first_active, point_on_hull);
+
+  // Update rockets
+  update_rockets();
+
+  // Disable rockets if they collide with the "forcefield"
+  // hint: a point to convex hull intersection test might be better here? :)
+  // (Disable if outside)
+  disable_rockets_when_collide_forcefield();
+
+  // Remove exploded rockets with remove erase idiom
+  rockets.erase(
+      std::remove_if(rockets.begin(), rockets.end(),
+                     [](const Rocket &rocket) { return !rocket.active; }),
+      rockets.end());
+
+  // Update particle beams
+  update_particle_beams();
 
   // Update explosion sprites and remove when done with remove erase idiom
   for (Explosion &explosion : explosions) {
@@ -375,6 +411,7 @@ void Game::draw() {
   }
 }
 
+// TODO: change this.
 // -----------------------------------------------------------
 // Sort tanks by health value using insertion sort
 // -----------------------------------------------------------
